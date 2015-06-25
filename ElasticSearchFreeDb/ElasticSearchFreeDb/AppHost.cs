@@ -17,6 +17,7 @@ namespace ElasticSearchFreeDb
         {
             ServiceStack.Text.JsConfig<PageResult<List<Disk>>>.EmitCamelCaseNames = true;
             ServiceStack.Text.JsConfig<Disk>.EmitCamelCaseNames = true;
+            ServiceStack.Text.JsConfig<AutoComplete>.EmitCamelCaseNames = true;
         }
 
         /// <summary>

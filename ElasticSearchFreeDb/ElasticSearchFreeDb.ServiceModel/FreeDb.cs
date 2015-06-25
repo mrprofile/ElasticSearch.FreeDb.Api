@@ -11,6 +11,13 @@ namespace ElasticSearchFreeDb.ServiceModel
     }
 
     [QueryRequestFilter]
+    [Route("/freedb/autocomplete")]
+    public class AutoCompleteRequest : QueryBase, IReturn<FreeDbResponse>
+    {
+
+    }
+
+    [QueryRequestFilter]
     [Route("/freedb/matchsearch")]
     public class FreeDbMatchSearch : QueryBase, IReturn<FreeDbResponse>
     {

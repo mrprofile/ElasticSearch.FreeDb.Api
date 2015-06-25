@@ -19,6 +19,49 @@ namespace ElasticSearchFreeDb.ServiceInterface
             return new ElasticClient(settings);
         }
 
+        public object Any(AutoCompleteRequest request)
+        {
+            var songList =
+                Client().Search<AutoComplete>(
+                    i =>
+                        i.Index("autocomplete")
+                            .Type("autocomplete")
+                            .Skip((request.Offset) * request.Limit)
+                            .Take(request.Limit)
+                            .Query(
+                                q =>
+                                    q.Filtered(
+                                        x => x.Query(f => f.Match(m => m.OnField(a => a.ObjectType).Query("Song")) && f.Match(m1 => m1.OnField(m2 => m2.Name).Query(request.Query)))))).Documents.ToList();
+
+            var artistList =
+               Client().Search<AutoComplete>(
+                   i =>
+                       i.Index("autocomplete")
+                           .Type("autocomplete")
+                           .Skip((request.Offset) * request.Limit)
+                           .Take(request.Limit)
+                           .Query(
+                               q =>
+                                   q.Filtered(
+                                       x => x.Query(f => f.Match(m => m.OnField(a => a.ObjectType).Query("Artist")) && f.Match(m1 => m1.OnField(m2 => m2.Name).Query(request.Query)))))).Documents.ToList(); ;
+
+            var albumList =
+                Client().Search<AutoComplete>(
+                    i =>
+                        i.Index("autocomplete")
+                            .Type("autocomplete")
+                            .Skip((request.Offset) * request.Limit)
+                            .Take(request.Limit)
+                            .Query(
+                                q =>
+                                    q.Filtered(
+                                        x => x.Query(f => f.Match(m => m.OnField(a => a.ObjectType).Query("Album")) && f.Match(m1 => m1.OnField(m2 => m2.Name).Query(request.Query)))))).Documents.ToList(); ;
+
+
+
+            return new { artists = artistList, songs = songList, albums = albumList };
+        }
+
         public object Any(FreeDb request)
         {
             var sp = Stopwatch.StartNew();
@@ -36,19 +79,14 @@ namespace ElasticSearchFreeDb.ServiceInterface
                                     q.QueryString(
                                         qs =>
                                             qs.OnFields(new[] { "artist", "title", "tracks" })
-                                                .Query(request.Query)))
-                                                    .Aggregations((a => a.Terms("genre.raw", t => t.Field("genre.raw").Size(20)))));
-            
-            var myAgg = results.Aggs.Terms("genre.raw");
-            var genreGroup = myAgg.Items.ToDictionary(item => item.Key, item => item.DocCount);
-            
+                                                .Query(request.Query))));
+
             returnValue.TimeElapsed = sp.Elapsed.TotalSeconds;
             returnValue.CurrentPage = (request.Offset == 0) ? 1 : request.Offset;
             returnValue.Result = results.Documents.ToList();
             returnValue.ItemCount = results.Documents.Count();
             returnValue.TotalItems = results.Total;
             returnValue.TotalPages = (int)Math.Ceiling((double)results.Total / request.Limit);
-            returnValue.Genres = genreGroup;
 
             return returnValue;
         }
@@ -73,7 +111,7 @@ namespace ElasticSearchFreeDb.ServiceInterface
             returnValue.ItemCount = results.Documents.Count();
             returnValue.TotalItems = results.Total;
             returnValue.TotalPages = (int)Math.Ceiling((double)results.Total / request.Limit);
-            
+
             return returnValue;
         }
     }

@@ -29,4 +29,11 @@ namespace ElasticSearchFreeDb.ServiceModel.Types
             Attributes = new Dictionary<string, string>();
         }
     }
+
+    public class AutoComplete
+    {
+        public string Name { get; set; }
+        public string ObjectType { get; set; }
+        public string Id { get; set; }
+    }
 }
