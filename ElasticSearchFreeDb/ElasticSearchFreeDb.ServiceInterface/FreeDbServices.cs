@@ -21,8 +21,8 @@ namespace ElasticSearchFreeDb.ServiceInterface
 
         public object Any(AutoCompleteRequest request)
         {
-            var songList =
-                Client().Search<AutoComplete>(
+            var multiResult = Client().MultiSearch(ms => ms
+                .Search<AutoComplete>("Artist",
                     i =>
                         i.Index("autocomplete")
                             .Type("autocomplete")
@@ -31,22 +31,10 @@ namespace ElasticSearchFreeDb.ServiceInterface
                             .Query(
                                 q =>
                                     q.Filtered(
-                                        x => x.Query(f => f.Match(m => m.OnField(a => a.ObjectType).Query("Song")) && f.Match(m1 => m1.OnField(m2 => m2.Name).Query(request.Query)))))).Documents.ToList();
-
-            var artistList =
-               Client().Search<AutoComplete>(
-                   i =>
-                       i.Index("autocomplete")
-                           .Type("autocomplete")
-                           .Skip((request.Offset) * request.Limit)
-                           .Take(request.Limit)
-                           .Query(
-                               q =>
-                                   q.Filtered(
-                                       x => x.Query(f => f.Match(m => m.OnField(a => a.ObjectType).Query("Artist")) && f.Match(m1 => m1.OnField(m2 => m2.Name).Query(request.Query)))))).Documents.ToList(); ;
-
-            var albumList =
-                Client().Search<AutoComplete>(
+                                        x => x.Query(f => f.Match(m => m.OnField(a => a.ObjectType).Query("Artist"))
+                                                          &&
+                                                          f.Match(m1 => m1.OnField(m2 => m2.Name).Query(request.Query))))))
+                .Search<AutoComplete>("Song",
                     i =>
                         i.Index("autocomplete")
                             .Type("autocomplete")
@@ -55,11 +43,28 @@ namespace ElasticSearchFreeDb.ServiceInterface
                             .Query(
                                 q =>
                                     q.Filtered(
-                                        x => x.Query(f => f.Match(m => m.OnField(a => a.ObjectType).Query("Album")) && f.Match(m1 => m1.OnField(m2 => m2.Name).Query(request.Query)))))).Documents.ToList(); ;
+                                        x => x.Query(f => f.Match(m => m.OnField(a => a.ObjectType).Query("Song"))
+                                                          &&
+                                                          f.Match(m1 => m1.OnField(m2 => m2.Name).Query(request.Query))))))
+                .Search<AutoComplete>("Album",
+                    i =>
+                        i.Index("autocomplete")
+                            .Type("autocomplete")
+                            .Skip((request.Offset) * request.Limit)
+                            .Take(request.Limit)
+                            .Query(
+                                q =>
+                                    q.Filtered(
+                                        x => x.Query(f => f.Match(m => m.OnField(a => a.ObjectType).Query("Album"))
+                                                          &&
+                                                          f.Match(m1 => m1.OnField(m2 => m2.Name).Query(request.Query)))))));
 
-
-
-            return new { artists = artistList, songs = songList, albums = albumList };
+            return new
+            {
+                artists = multiResult.GetResponse<AutoComplete>("Artist").Documents.ToList(),
+                songs = multiResult.GetResponse<AutoComplete>("Song").Documents.ToList(),
+                albums = multiResult.GetResponse<AutoComplete>("Album").Documents.ToList()
+            };
         }
 
         public object Any(FreeDb request)
