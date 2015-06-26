@@ -61,9 +61,54 @@ namespace ElasticSearchFreeDb.ServiceInterface
 
             return new
             {
-                artists = multiResult.GetResponse<AutoComplete>("Artist").Documents.ToList(),
-                songs = multiResult.GetResponse<AutoComplete>("Song").Documents.ToList(),
-                albums = multiResult.GetResponse<AutoComplete>("Album").Documents.ToList()
+                artists = multiResult.GetResponse<AutoComplete>("Artist").Documents.Distinct(),
+                songs = multiResult.GetResponse<AutoComplete>("Song").Documents.Distinct(),
+                albums = multiResult.GetResponse<AutoComplete>("Album").Documents.Distinct()
+            };
+        }
+
+        public object Any(AutoCompleteSimpleRequest request)
+        {
+            var multiResult = Client().MultiSearch(ms => ms
+                .Search<AutoComplete>("Artist",
+                    i =>
+                        i.Index("autocomplete")
+                            .Type("autocomplete")
+                            .Skip((request.Offset) * request.Limit)
+                            .Take(request.Limit)
+                            .Query(
+                                q =>
+                                    q.Filtered(
+                                        x => x.Query(f => f.Match(m => m.OnField(a => a.ObjectType).Query("Artist"))
+                                                          && f.Match(m1 => m1.OnField(m2 => m2.Name).Query(request.Query))))))
+                .Search<AutoComplete>("Song",
+                    i =>
+                        i.Index("autocomplete")
+                            .Type("autocomplete")
+                            .Skip((request.Offset) * request.Limit)
+                            .Take(request.Limit)
+                            .Query(
+                                q =>
+                                    q.Filtered(
+                                        x => x.Query(f => f.Match(m => m.OnField(a => a.ObjectType).Query("Song"))
+                                                          && f.Match(m1 => m1.OnField(m2 => m2.Name).Query(request.Query))))))
+                .Search<AutoComplete>("Album",
+                    i =>
+                        i.Index("autocomplete")
+                            .Type("autocomplete")
+                            .Skip((request.Offset) * request.Limit)
+                            .Take(request.Limit)
+                            .Query(
+                                q =>
+                                    q.Filtered(
+                                        x => x.Query(f => f.Match(m => m.OnField(a => a.ObjectType).Query("Album"))
+                                                          && f.Match(m1 => m1.OnField(m2 => m2.Name).Query(request.Query)))))));
+
+            return new
+            {
+                artists = multiResult.GetResponse<AutoComplete>("Artist").Documents.Select(x => x.Name).Distinct(),
+                songs = multiResult.GetResponse<AutoComplete>("Song").Documents.Select(x => x.Name).Distinct(),
+                albums = multiResult.GetResponse<AutoComplete>("Album").Documents.Select(x => x.Name).Distinct()
             };
         }
 

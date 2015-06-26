@@ -34,6 +34,5 @@ namespace ElasticSearchFreeDb.ServiceModel.Types
     {
         public string Name { get; set; }
         public string ObjectType { get; set; }
-        public string Id { get; set; }
     }
 }
